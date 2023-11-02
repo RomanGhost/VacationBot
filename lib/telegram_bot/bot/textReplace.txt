@@ -1,0 +1,12 @@
+ %{
+    "message" => %{
+        "chat" => %{
+            "first_name" => "👻", "id" => 166538608, "type" => "private", "username" => "gh0st_8"
+        }, 
+        "date" => 1698599631, "from" => %{
+            "first_name" => "👻", "id" => 166538608, "is_bot" => false, "language_code" => "en", "username" => "gh0st_8"
+        }, 
+        "message_id" => 502, "text" => "T"
+    }, 
+    "update_id" => 512922726
+} 
