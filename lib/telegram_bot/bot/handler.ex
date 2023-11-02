@@ -48,4 +48,18 @@ defmodule RelaxTelegramBot.Bot.Handler do
     end
   end
 
+  def send_message(token, chat_id, text) do
+    Telegram.Api.request(
+      token, "sendMessage", chat_id: chat_id,
+      text: text
+    )
+  end
+
+  def send_message(token,  chat_id, text, markup) do
+    Telegram.Api.request(
+      token, "sendMessage", chat_id: chat_id,
+      text: text, reply_markup: {:json, markup}
+    )
+  end
+
 end

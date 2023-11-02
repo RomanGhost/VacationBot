@@ -19,8 +19,6 @@ defmodule RelaxTelegramBot.Application do
       {Telegram.Poller, bots: [{RelaxTelegramBot.Bot.Handler, bot_config}]}
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: FrRelaxTelegramBot.Supervisor]
     Supervisor.start_link(children, opts)
   end

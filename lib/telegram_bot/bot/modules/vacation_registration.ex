@@ -8,38 +8,44 @@ defmodule RelaxTelegramBot.Bot.VacationReg do
   def handle_update(%{"message" => %{"text" => text, "chat" => %{"id" => chat_id}}}, token, state) do
     case (state[:vacation_reg][:step]) do
       0 ->
-        # Шаг 0: Получаем начальную дату
         case validate_date(text) do
           {:ok, date} ->
             {st, date} = date
-            {st, new_state, _} = message("Принято!\nВведите конечную дату отпуска в формате DD.MM.YYYY:", token, chat_id, %{
-              state | vacation_reg: %{state[:vacation_reg] | date_begin: date, step: 1}})
+            text = "Принято!\nВведите конечную дату отпуска в формате DD.MM.YYYY:"
+            RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+
+            new_state = %{state | vacation_reg: %{state[:vacation_reg] | date_begin: date, step: 1}}
             {:ok, new_state, @session_ttl}
 
           {:error, reason} ->
-            {st, new_state, _} = message("Ошибка ввода даты: #{reason}\nПожалуйста, введите дату в формате DD.MM.YYYY:", token, chat_id, state)
-            {:ok, new_state, @session_ttl}
+            text = "Ошибка ввода даты: #{reason}\nПожалуйста, введите дату в формате DD.MM.YYYY:"
+            RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+
+            {:ok, state, @session_ttl}
         end
 
       1 ->
-        # Шаг 1: Получаем конечную дату
-
         case validate_date(text, state[:vacation_reg][:date_begin]) do
           {:ok, date} ->
             {st, date} = date
-            {st, new_state, _} = message("Принято!\nДобавь так же обоснование отпуска!", token, chat_id, %{
-              state | vacation_reg: %{state[:vacation_reg] | date_end: date}})
-            new_state = %{new_state | vacation_reg: %{new_state[:vacation_reg] | step: 2}}
+            text = "Принято!\nДобавь так же обоснование отпуска!"
+            RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
 
+            new_state =  %{state | vacation_reg: %{state[:vacation_reg] | date_end: date, step: 2}}
             {:ok, new_state, @session_ttl}
 
           {:error, reason} ->
-            {st, new_state, _} = message("Ошибка ввода даты: #{reason}\nПожалуйста, введите корректную конечную дату отпуска в формате DD.MM.YYYY:", token, chat_id, state)
-            {:ok, new_state, @session_ttl}
+            text = "Ошибка ввода даты: #{reason}\nПожалуйста, введите корректную конечную дату отпуска в формате DD.MM.YYYY:"
+            RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+
+            {:ok, state, @session_ttl}
         end
+
       2 ->
-        {st, new_state, _} = message("Принято!\nОтпуск успешно зарегестрирован. Жди подтверждение от руководителя!", token, chat_id, %{
-          state |active_state: nil, vacation_reg: %{state[:vacation_reg] | justification: text, step: 0}})
+        text = "Принято!\nОтпуск успешно зарегестрирован. Жди подтверждение от руководителя!"
+        RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+
+        new_state = %{state |active_state: nil, vacation_reg: %{state[:vacation_reg] | justification: text, step: 0}}
 
         user_id = RelaxTelegramBot.Request.Employee.get_user(chat_id).id
         date_begin = Timex.parse!(new_state[:vacation_reg][:date_begin], "{0D}.{0M}.{YYYY}") |> Timex.to_date
@@ -54,6 +60,7 @@ defmodule RelaxTelegramBot.Bot.VacationReg do
         )
 
         {:ok, new_state, @session_ttl}
+
       _ ->
         {:error, state, @session_ttl}
     end

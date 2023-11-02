@@ -12,44 +12,50 @@ defmodule RelaxTelegramBot.Bot.Commands do
 
   defp command(%{"message" => %{"text" => "/start", "chat" => %{"first_name" => first_name, "id" => chat_id}}}, token, state) do
     {st, new_state} = RelaxTelegramBot.Bot.StateNum.get_states_nil()
-    Telegram.Api.request(
-      token, "sendMessage", chat_id: chat_id,
-      text: "Привет, #{first_name}!\nПройди регистрацию: /reg\n\nЕсли ты уже зарегистрирован, то воспользуйся командой для создания отпуска /vacation"
-    )
+    text = "Привет, #{first_name}!\nПройди регистрацию: /reg\n\nЕсли ты уже зарегистрирован, то воспользуйся командой для создания отпуска /vacation"
+    RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+
+    {:ok, new_state}
+  end
+
+  defp command(%{"message" => %{"text" => "/reset", "chat" => %{"first_name" => first_name, "id" => chat_id}}}, token, state) do
+    {st, new_state} = RelaxTelegramBot.Bot.StateNum.get_states_nil()
+    text = "Состояние сброшено"
+    RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+
     {:ok, new_state}
   end
 
   defp command(%{"message" => %{"text" => "/reg", "chat" => %{"id" => chat_id}}}, token, state) do
-    if RelaxTelegramBot.Request.Employee.get_user(chat_id) do
-      Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Пользователь уже существует"
-      )
+    {text, new_state} = if RelaxTelegramBot.Request.Employee.get_user(chat_id) do
+      text = "Пользователь уже существует"
       new_state = %{state | active_state: :nill}
-      {:ok, new_state}
+
+      {text, new_state}
     else
+      text = "Начнем регистрацию, представься.\nКак тебя зовут?:"
       new_state = %{state | active_state: :registration}
-      Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Начнем регистрацию, представься.\nКак тебя зовут?:"
-      )
-      {:ok, new_state}
+
+      {text, new_state}
     end
+
+    RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+    {:ok, new_state}
   end
 
   defp command(%{"message" => %{"text" => "/vacation", "chat" => %{"id" => chat_id}}}, token, state) do
     new_state = %{state | active_state: :vacation_reg}
-    Telegram.Api.request(
-      token, "sendMessage", chat_id: chat_id,
-      text: "Начнем заполнять отпуск\nВведи дату планируемого отпуска в формате DD.MM.YYYY:"
-    )
+
+    text = "Начнем заполнять отпуск\nВведи дату планируемого отпуска в формате DD.MM.YYYY:"
+    RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+
     {:ok, new_state}
   end
 
   defp command(%{"message" => %{"text" => "/view_vacations", "chat" => %{"id" => chat_id}}}, token, state) do
     vacations = RelaxTelegramBot.Request.VacationViewer.get_all_vacations()
 
-    response_text = if Enum.empty?(vacations) do
+    text = if Enum.empty?(vacations) do
       "Отпусков пока нет"
     else
       Enum.reduce(vacations, "Отпуска сотрудников:\n", fn {index, date_begin, date_end, last_name, first_name, surname, status}, acc ->
@@ -62,18 +68,15 @@ defmodule RelaxTelegramBot.Bot.Commands do
           "Статус: #{status}\n\n"
       end)
     end
+    RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
 
-    Telegram.Api.request(
-      token, "sendMessage", chat_id: chat_id,
-      text: response_text
-    )
     {:ok, state}
   end
 
   defp command(%{"message" => %{"text" => "/view_employee", "chat" => %{"id" => chat_id}}}, token, state) do
     employees = RelaxTelegramBot.Request.Employee.get_all_employee()
 
-    response_text = if Enum.empty?(employees) do
+    text = if Enum.empty?(employees) do
       "Сотрудников нет"
     else
       Enum.reduce(employees, "Список сотрудников:\n", fn {id, last_name, first_name, surname, role_name}, acc ->
@@ -82,21 +85,8 @@ defmodule RelaxTelegramBot.Bot.Commands do
           "Роль: #{role_name}\n\n"
       end)
     end
+    RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
 
-    Telegram.Api.request(
-      token, "sendMessage", chat_id: chat_id,
-      text: response_text
-    )
-    {:ok, state}
-  end
-
-
-
-  defp command(%{"message" => %{"text" => "/state", "chat" => %{"id" => chat_id}}}, token, state) do
-    Telegram.Api.request(
-      token, "sendMessage", chat_id: chat_id,
-      text: "Текущее состояние: #{state[:active_state]}"
-    )
     {:ok, state}
   end
 
@@ -109,6 +99,124 @@ defmodule RelaxTelegramBot.Bot.Commands do
     else
       command_usr(command_text, id, chat_id, token, state)
     end
+    {:ok, state}
+  end
+
+  defp command_adm("/approve", id, chat_id, token, state) do
+    res = change_vacation(id, 3)
+
+    text = case (res) do
+      {:ok, database} ->
+        {_, date_begin} = Timex.format(database.begin, "{0D}.{0M}.{YYYY}")
+        {_, date_end} = Timex.format(database.end, "{0D}.{0M}.{YYYY}")
+
+        text = "Отпуск #{date_begin} - #{date_end}\nОтклонен"
+        RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+        "Отпуск одобрен"
+      {:error, nil} ->
+        "Отпуск не найден"
+      _ ->
+        "Что-то пошло не так"
+    end
+    RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+
+    {:ok, state}
+  end
+
+  defp command_adm("/refuse", id, chat_id, token, state) do
+    res = change_vacation(id, 1)
+
+    text = case (res) do
+      {:ok, database} ->
+        {_, date_begin} = Timex.format(database.begin, "{0D}.{0M}.{YYYY}")
+        {_, date_end} = Timex.format(database.end, "{0D}.{0M}.{YYYY}")
+
+        text = "Отпуск #{date_begin} - #{date_end}\nОтклонен"
+        RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+        "Отпуск отклонен"
+      {:error, nil} ->
+        "Отпуск не найден"
+      _ ->
+        "Что-то пошло не так"
+    end
+    RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+
+    {:ok, state}
+  end
+
+  defp command_usr("/cancel", id, chat_id, token, state) do
+    res = change_vacation(id, 1)
+
+    text = case (res) do
+      {:ok, database} ->
+        "Отпуск отменен"
+      {:error, nil} ->
+        "Отпуск не найден"
+      _ ->
+        "Что-то пошло не так"
+    end
+    RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+
+    {:ok, state}
+  end
+
+  defp command_amd("/fire", id, chat_id, token, state) do
+    user = RelaxTelegramBot.Request.Employee.user_by_id(id)
+    res = RelaxTelegramBot.Request.Employee.delete(user.telegram_id)
+    text = case (res) do
+      {:ok, text} ->
+        "Сотрудник спешно уволен"
+      {:error, text} ->
+        "Ошибка увольнения. Тебя нет в команде"
+      _ ->
+        "Что-то пошло не так"
+    end
+
+    RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+    {:ok, state}
+  end
+
+  defp command_adm("/dismissal", _id, chat_id, token, state) do
+    res = RelaxTelegramBot.Request.Employee.delete(chat_id)
+    text = case (res) do
+      {:ok, text} ->
+        "Успешно уволен"
+      {:error, text} ->
+        "Ошибка увольнения. Тебя нет в команде"
+      _ ->
+        "Что-то пошло не так"
+    end
+
+    RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+    {:ok, state}
+  end
+
+  defp command_usr("/dismissal", _id, chat_id, token, state) do
+    res = RelaxTelegramBot.Request.Employee.delete(chat_id)
+    text = case (res) do
+      {:ok, text} ->
+        "Успешно уволен"
+      {:error, text} ->
+        "Ошибка увольнения. Тебя нет в команде"
+      _ ->
+         "Что-то пошло не так"
+    end
+    RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+
+    {:ok, state}
+  end
+
+  defp command_usr(_command, id, chat_id, token, state) do
+    text = "Недостаточно прав.\nВы не являетесь руководителем"
+    RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+
+    {:ok, state}
+  end
+
+  defp command_adm(_command, id, chat_id, token, state) do
+    text = "Неизвестная команда"
+    RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+
     {:ok, state}
   end
 
@@ -125,181 +233,6 @@ defmodule RelaxTelegramBot.Bot.Commands do
         command = Enum.at(tokens, 0)
         {command, -1}
     end
-  end
-
-  defp command_adm("/approve", id, chat_id, token, state) do
-    res = change_vacation(id, 3)
-
-    case (res) do
-      {:ok, database} ->
-        {_, date_begin} = Timex.format(database.begin, "{0D}.{0M}.{YYYY}")
-        {_, date_end} = Timex.format(database.end, "{0D}.{0M}.{YYYY}")
-
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: database.chat_id,
-        text: "Отпуск #{date_begin} - #{date_end}\nОтклонен"
-        )
-
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Отпуск одобрен"
-        )
-      {:error, nil} ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Отпуск не найден"
-        )
-      _ ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Что-то пошло не так"
-        )
-    end
-
-    {:ok, state}
-  end
-
-  defp command_adm("/refuse", id, chat_id, token, state) do
-    res = change_vacation(id, 1)
-
-    case (res) do
-      {:ok, database} ->
-        {_, date_begin} = Timex.format(database.begin, "{0D}.{0M}.{YYYY}")
-        {_, date_end} = Timex.format(database.end, "{0D}.{0M}.{YYYY}")
-
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: database.chat_id,
-        text: "Отпуск #{date_begin} - #{date_end}\nОтклонен"
-        )
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Отпуск отклонен"
-        )
-      {:error, nil} ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Отпуск не найден"
-        )
-      _ ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Что-то пошло не так"
-        )
-    end
-
-    {:ok, state}
-  end
-
-  defp command_usr("/cancel", id, chat_id, token, state) do
-    res = change_vacation(id, 1)
-
-    case (res) do
-      {:ok, database} ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Отпуск отменен"
-        )
-      {:error, nil} ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Отпуск не найден"
-        )
-      _ ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Что-то пошло не так"
-        )
-    end
-
-    {:ok, state}
-  end
-
-  defp command_amd("/fire", id, chat_id, token, state) do
-    user = RelaxTelegramBot.Request.Employee.user_by_id(id)
-    res = RelaxTelegramBot.Request.Employee.delete(user.telegram_id)
-    case (res) do
-      {:ok, text} ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Сотрудник спешно уволен"
-        )
-      {:error, text} ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Ошибка увольнения. Тебя нет в команде"
-        )
-      _ ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Что-то пошло не так"
-        )
-    end
-
-    {:ok, state}
-  end
-
-  defp command_adm("/dismissal", _id, chat_id, token, state) do
-    res = RelaxTelegramBot.Request.Employee.delete(chat_id)
-    case (res) do
-      {:ok, text} ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Успешно уволен"
-        )
-      {:error, text} ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Ошибка увольнения. Тебя нет в команде"
-        )
-      _ ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Что-то пошло не так"
-        )
-    end
-
-    {:ok, state}
-  end
-
-  defp command_usr("/dismissal", _id, chat_id, token, state) do
-    res = RelaxTelegramBot.Request.Employee.delete(chat_id)
-    case (res) do
-      {:ok, text} ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Успешно уволен"
-        )
-      {:error, text} ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Ошибка увольнения. Тебя нет в команде"
-        )
-      _ ->
-        Telegram.Api.request(
-        token, "sendMessage", chat_id: chat_id,
-        text: "Что-то пошло не так"
-        )
-    end
-
-    {:ok, state}
-  end
-
-  defp command_usr(_command, id, chat_id, token, state) do
-    Telegram.Api.request(
-      token, "sendMessage", chat_id: chat_id,
-      text: "Недостаточно прав.\nВы не являетесь руководителем"
-      )
-
-    {:ok, state}
-  end
-
-  defp command_adm(_command, id, chat_id, token, state) do
-    Telegram.Api.request(
-      token, "sendMessage", chat_id: chat_id,
-      text: "Неизвестная команда"
-      )
-
-    {:ok, state}
   end
 
   defp change_vacation(id, status_id) do

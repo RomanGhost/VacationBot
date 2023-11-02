@@ -1,7 +1,7 @@
 defmodule RelaxTelegramBot.Request.Employee do
   import Ecto.Query
 
-  def add_employee(telegram_id, first_name, last_name, surname, role_id) do
+  def add(telegram_id, first_name, last_name, surname, role_id) do
     employee_attrs = %RelaxTelegramBot.Model.Employee{
       telegram_id: telegram_id,
       first_name: first_name,

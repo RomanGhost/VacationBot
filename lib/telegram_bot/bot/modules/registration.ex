@@ -11,14 +11,18 @@ defmodule RelaxTelegramBot.Bot.Registration do
     case (state[:registration][:step] ) do
       0 ->
         # Шаг 0: Получаем имя
-        {st, new_state, _} = message("Принято!\nКак твоя фамилия?:", token, chat_id, %{
-          state | registration: %{state[:registration] | first_name: text, step: 1}})
+        text = "Принято!\nКак твоя фамилия?:"
+        RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+        new_state = %{state | registration: %{state[:registration] | first_name: text, step: 1}}
+
         {:ok, new_state, @session_ttl}
 
       1 ->
         # Шаг 1: Получаем фамилию
-        {st, new_state, _} = message("Принято!\nКакое твое отчество?:", token, chat_id, %{
-          state | registration: %{state[:registration] | last_name: text, step: 2}})
+        text = "Принято!\nКакое твое отчество?:"
+        RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+        new_state = %{state | registration: %{state[:registration] | last_name: text, step: 2}}
+
         {:ok, new_state, @session_ttl}
 
       2 ->
@@ -27,14 +31,19 @@ defmodule RelaxTelegramBot.Bot.Registration do
           ["Руководитель", "Рядовой сотрудник"]
         ]
         keyboard_markup = %{one_time_keyboard: true, keyboard: keyboard}
-        {st, new_state, _} = message("Принято!\nВыбери роль в команде", keyboard_markup, token, chat_id, %{
-          state | registration: %{state[:registration] | surname: text, step: 3}})
+        text = "Принято!\nВыбери роль в команде"
+        RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text, keyboard_markup)
+        new_state = %{state | registration: %{state[:registration] | surname: text, step: 3}}
         {:ok, new_state, @session_ttl}
 
       3 ->
         # Все шаги пройдены, обработка завершена
-        {st, new_state, _} = role_id(text,  token, chat_id, state)
-        RelaxTelegramBot.Request.Employee.add_employee(
+        text = "Регистрация завершена.\nСпасибо!"
+        RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
+
+
+        {st, new_state, _} = role_id(text, state)
+        RelaxTelegramBot.Request.Employee.add(
           chat_id,
           new_state[:registration][:first_name],
           new_state[:registration][:last_name],
@@ -48,32 +57,14 @@ defmodule RelaxTelegramBot.Bot.Registration do
     end
   end
 
-  defp message(response_text, markup, token, chat_id, new_state) do
-    Telegram.Api.request(
-      token, "sendMessage", chat_id: chat_id,
-      text: response_text, reply_markup: {:json, markup}
-    )
-    {:ok, new_state, @session_ttl}
-  end
-
-  defp message(response_text, token, chat_id, new_state) do
-    Telegram.Api.request(
-      token, "sendMessage", chat_id: chat_id,
-      text: response_text
-    )
-    {:ok, new_state, @session_ttl}
-  end
-
-  defp role_id("Руководитель", token, chat_id, state) do
-    {st, new_state, _} = message("Регистрация завершена.\nСпасибо!", token, chat_id, %{
-      state | active_state: nil, registration: %{state[:registration] | role_id: 1, step: 0}})
+  defp role_id("Руководитель", state) do
+    new_state = %{state | active_state: nil, registration: %{state[:registration] | role_id: 1, step: 0}}
 
     {:ok, new_state, @session_ttl}
   end
 
-  defp role_id(_text, token, chat_id, state) do
-    {st, new_state, _} = message("Регистрация завершена.\nСпасибо!", token, chat_id, %{
-      state | active_state: nil, registration: %{state[:registration] | role_id: 2, step: 0}})
+  defp role_id(_text, state) do
+    new_state = %{state | active_state: nil, registration: %{state[:registration] | role_id: 2, step: 0}}
 
     {:ok, new_state, @session_ttl}
   end

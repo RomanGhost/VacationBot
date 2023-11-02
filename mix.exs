@@ -27,8 +27,6 @@ defmodule RelaxTelegramBot.MixProject do
       {:telegram, github: "visciang/telegram", tag: "1.1.0"},
       {:finch, "~> 0.16.0"},
       {:timex, "~> 3.7.11"}
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
   end
 end
