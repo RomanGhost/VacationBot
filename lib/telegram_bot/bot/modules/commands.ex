@@ -110,7 +110,7 @@ defmodule RelaxTelegramBot.Bot.Commands do
         {_, date_begin} = Timex.format(database.begin, "{0D}.{0M}.{YYYY}")
         {_, date_end} = Timex.format(database.end, "{0D}.{0M}.{YYYY}")
 
-        text = "Отпуск #{date_begin} - #{date_end}\nОтклонен"
+        text = "Отпуск #{date_begin} - #{date_end}\nОдобрен"
         RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
         "Отпуск одобрен"
       {:error, nil} ->
