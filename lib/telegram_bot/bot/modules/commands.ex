@@ -44,9 +44,18 @@ defmodule RelaxTelegramBot.Bot.Commands do
   end
 
   defp command(%{"message" => %{"text" => "/vacation", "chat" => %{"id" => chat_id}}}, token, state) do
-    new_state = %{state | active_state: :vacation_reg}
 
-    text = "Начнем заполнять отпуск\nВведи дату планируемого отпуска в формате DD.MM.YYYY:"
+    {text, new_state} = if not RelaxTelegramBot.Request.Employee.get_user(chat_id) do
+      text = "Пользователя не существует"
+      new_state = %{state | active_state: :nill}
+
+      {text, new_state}
+    else
+      text = "Начнем заполнять отпуск\nВведи дату планируемого отпуска в формате DD.MM.YYYY:"
+      new_state = %{state | active_state: :vacation_reg}
+
+      {text, new_state}
+    end
     RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
 
     {:ok, new_state}
