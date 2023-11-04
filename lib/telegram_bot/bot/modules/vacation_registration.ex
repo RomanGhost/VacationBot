@@ -5,10 +5,10 @@ defmodule RelaxTelegramBot.Bot.VacationReg do
   @session_ttl 60 * 1_000
 
   @impl Telegram.ChatBot
-  def handle_update(%{"message" => %{"text" => text, "chat" => %{"id" => chat_id}}}, token, state) do
+  def handle_update(%{"message" => %{"text" => text_message, "chat" => %{"id" => chat_id}}}, token, state) do
     case (state[:vacation_reg][:step]) do
       0 ->
-        case validate_date(text) do
+        case validate_date(text_message) do
           {:ok, date} ->
             {st, date} = date
             text = "Принято!\nВведите конечную дату отпуска в формате DD.MM.YYYY:"
@@ -25,7 +25,7 @@ defmodule RelaxTelegramBot.Bot.VacationReg do
         end
 
       1 ->
-        case validate_date(text, state[:vacation_reg][:date_begin]) do
+        case validate_date(text_message, state[:vacation_reg][:date_begin]) do
           {:ok, date} ->
             {st, date} = date
             text = "Принято!\nДобавь так же обоснование отпуска!"
@@ -45,7 +45,7 @@ defmodule RelaxTelegramBot.Bot.VacationReg do
         text = "Принято!\nОтпуск успешно зарегестрирован. Жди подтверждение от руководителя!"
         RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
 
-        new_state = %{state |active_state: nil, vacation_reg: %{state[:vacation_reg] | justification: text, step: 0}}
+        new_state = %{state |active_state: nil, vacation_reg: %{state[:vacation_reg] | justification: text_message, step: 0}}
 
         user_id = RelaxTelegramBot.Request.Employee.get_user(chat_id).id
         date_begin = Timex.parse!(new_state[:vacation_reg][:date_begin], "{0D}.{0M}.{YYYY}") |> Timex.to_date
@@ -95,13 +95,5 @@ defmodule RelaxTelegramBot.Bot.VacationReg do
       _ ->
         {:error, "Дата введена неверно."}
     end
-  end
-
-  defp message(response_text, token, chat_id, new_state) do
-    Telegram.Api.request(
-      token, "sendMessage", chat_id: chat_id,
-      text: response_text
-    )
-    {:ok, new_state, @session_ttl}
   end
 end

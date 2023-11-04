@@ -26,10 +26,31 @@ defmodule RelaxTelegramBot.Bot.Commands do
     {:ok, new_state}
   end
 
+  defp command(%{"message" => %{"text" => "/info", "chat" => %{"id" => chat_id}}}, token, state) do
+    info_text = """
+    Основные команды:
+    /start - Начать работу с ботом.
+    /reg - Зарегистрироваться.
+    /info - Справочнмк команд.
+    /vacation - Создать отпуск.
+    /view_vacations - Просмотреть все отпуска.
+    /view_employee - Просмотреть список сотрудников.
+    /cancel n - Отменить планируемый отпуск.
+    /approve n - Одобрить планируемый отпуск (только для администратора).
+    /refuse n - Отклонить планируемый отпуск (только для администратора).
+    /dismissal n - Уволить сотрудника (только для администратора).
+    /dismissal - Уволить себя (только для пользователя с правами).
+    """
+
+    RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, info_text)
+    {:ok, state}
+  end
+
+
   defp command(%{"message" => %{"text" => "/reg", "chat" => %{"id" => chat_id}}}, token, state) do
     {text, new_state} = if RelaxTelegramBot.Request.Employee.get_user(chat_id) do
       text = "Пользователь уже существует"
-      new_state = %{state | active_state: :nill}
+      new_state = %{state | active_state: :nil}
 
       {text, new_state}
     else
@@ -44,15 +65,14 @@ defmodule RelaxTelegramBot.Bot.Commands do
   end
 
   defp command(%{"message" => %{"text" => "/vacation", "chat" => %{"id" => chat_id}}}, token, state) do
-
-    {text, new_state} = if not RelaxTelegramBot.Request.Employee.get_user(chat_id) do
-      text = "Пользователя не существует"
-      new_state = %{state | active_state: :nill}
+    {text, new_state} = if (RelaxTelegramBot.Request.Employee.get_user(chat_id)) do
+      text = "Начнем заполнять отпуск\nВведи дату планируемого отпуска в формате DD.MM.YYYY:"
+      new_state = %{state | active_state: :vacation_reg}
 
       {text, new_state}
     else
-      text = "Начнем заполнять отпуск\nВведи дату планируемого отпуска в формате DD.MM.YYYY:"
-      new_state = %{state | active_state: :vacation_reg}
+      text = "Пользователя не существует"
+      new_state = %{state | active_state: :nil}
 
       {text, new_state}
     end
@@ -99,8 +119,8 @@ defmodule RelaxTelegramBot.Bot.Commands do
     {:ok, state}
   end
 
-  defp command(%{"message" => %{"text" => text, "chat" => %{"id" => chat_id}}}, token, state) do
-    {command_text, id} = parse_string(text)
+  defp command(%{"message" => %{"text" => text_message, "chat" => %{"id" => chat_id}}}, token, state) do
+    {command_text, id} = parse_string(text_message)
 
 
     if(RelaxTelegramBot.Request.Employee.has_role_boss?(chat_id)) do
