@@ -8,40 +8,21 @@ defmodule RelaxTelegramBot.Bot.VacationReg do
   def handle_update(%{"message" => %{"text" => text_message, "chat" => %{"id" => chat_id}}}, token, state) do
     case (state[:vacation_reg][:step]) do
       0 ->
-        case validate_date(text_message) do
-          {:ok, date} ->
-            {st, date} = date
-            text = "Принято!\nВведите конечную дату отпуска в формате DD.MM.YYYY:"
+        {date_begin, date_end} = parce_date(text_message)
+        IO.puts(date_begin)
+        IO.puts(date_end)
+        case check_date_begin(date_begin, date_end) do
+          {:ok, text, date_begin, date_end} ->
             RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
 
-            new_state = %{state | vacation_reg: %{state[:vacation_reg] | date_begin: date, step: 1}}
+            new_state =  %{state | vacation_reg: %{state[:vacation_reg] | date_begin: date_begin, date_end: date_end, step: 1}}
             {:ok, new_state, @session_ttl}
 
-          {:error, reason} ->
-            text = "Ошибка ввода даты: #{reason}\nПожалуйста, введите дату в формате DD.MM.YYYY:"
+          {:error, text, _, _} ->
             RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
-
             {:ok, state, @session_ttl}
         end
-
       1 ->
-        case validate_date(text_message, state[:vacation_reg][:date_begin]) do
-          {:ok, date} ->
-            {st, date} = date
-            text = "Принято!\nДобавь так же обоснование отпуска!"
-            RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
-
-            new_state =  %{state | vacation_reg: %{state[:vacation_reg] | date_end: date, step: 2}}
-            {:ok, new_state, @session_ttl}
-
-          {:error, reason} ->
-            text = "Ошибка ввода даты: #{reason}\nПожалуйста, введите корректную конечную дату отпуска в формате DD.MM.YYYY:"
-            RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
-
-            {:ok, state, @session_ttl}
-        end
-
-      2 ->
         text = "Принято!\nОтпуск успешно зарегестрирован. Жди подтверждение от руководителя!"
         RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)
 
@@ -65,6 +46,34 @@ defmodule RelaxTelegramBot.Bot.VacationReg do
         {:error, state, @session_ttl}
     end
   end
+
+
+  defp check_date_begin(date_begin, date_end) do
+    case validate_date(date_begin) do
+      {:ok, date} ->
+        {_, date} = date
+        {st, text, _, date_end} = check_date_end(date_begin, date_end)
+        {st, text, date, date_end}
+
+      {:error, reason} ->
+        text = "Ошибка ввода даты: #{reason}\nПожалуйста, введите корректную конечную дату отпуска в формате DD.MM.YYYY-DD.MM.YYYY"
+        {:error, text, nil, nil}
+    end
+  end
+
+  defp check_date_end(date_begin, date_end) do
+    case validate_date(date_end, date_begin) do
+      {:ok, date} ->
+        {_, date} = date
+        text = "Принято! Введи обоснование отпуска"
+        {:ok, text, nil, date}
+
+      {:error, reason} ->
+        text = "Ошибка ввода даты: #{reason}\nПожалуйста, введите корректную конечную дату отпуска в формате DD.MM.YYYY-DD.MM.YYYY"
+        {:error, text, nil, nil}
+    end
+  end
+
 
   defp validate_date(text, date_begin) do
     r = Timex.parse(date_begin, "{0D}.{0M}.{YYYY}")
@@ -96,4 +105,22 @@ defmodule RelaxTelegramBot.Bot.VacationReg do
         {:error, "Дата введена неверно."}
     end
   end
+
+  def parce_date(text) do
+    regex_pattern = ~r/^\s*(\d{2}\.\d{2}\.\d{4})\s*-\s*(\d{2}\.\d{2}\.\d{4})\s*$/
+
+    # Применяем регулярное выражение к тексту
+    match_data = Regex.run(regex_pattern, text)
+
+    # Если есть совпадение, извлекаем данные
+    if match_data do
+      date_begin = hd(tl(match_data))
+      date_end = hd(tl(tl(match_data)))
+      {date_begin, date_end}
+    else
+      IO.puts "Нет совпадений."
+      {:nil, :nil}
+    end
+  end
+
 end
