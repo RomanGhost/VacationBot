@@ -33,4 +33,14 @@ defmodule RelaxTelegramBot.Request.Vacation do
 
     RelaxTelegramBot.Repo.update_all(query, [])
   end
+
+  def get_by_id(id) do
+    query =
+      from v in RelaxTelegramBot.Model.Vacation,
+        where: v.id == ^id,
+        select: v
+
+    RelaxTelegramBot.Repo.one(query)
+  end
+
 end

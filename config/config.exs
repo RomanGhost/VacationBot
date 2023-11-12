@@ -9,5 +9,9 @@ config :relax_telegram_bot, RelaxTelegramBot.Repo,
   hostname: System.get_env("DATABASE_HOSTNAME"),
   pool_size: 10
 
+config :relax_telegram_bot, RelaxTelegramBot.Scheduler,
+  hour: 5,
+  minute: 30
+
 config :relax_telegram_bot, ecto_repos: [RelaxTelegramBot.Repo]
 config :tesla, :adapter, {Tesla.Adapter.Finch, name: RelaxTelegramBot.Finch}

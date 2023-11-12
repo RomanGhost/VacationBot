@@ -6,9 +6,5 @@ defmodule RelaxTelegramBot.Repo.Migrations.CreateEmployeeRole do
     create table(:employee_role) do
       add :name, :string
     end
-
-    # Заполнение таблицы начальными данными
-    execute("INSERT INTO employee_role (name) VALUES ('руководитель')")
-    execute("INSERT INTO employee_role (name) VALUES ('сотрудник')")
   end
 end

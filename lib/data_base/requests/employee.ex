@@ -50,4 +50,12 @@ defmodule RelaxTelegramBot.Request.Employee do
         {:ok, "User deleted successfully"}
     end
   end
+
+  def update_vacation() do
+    %RelaxTelegramBot.Model.Vacation{}
+    |> RelaxTelegramBot.Trigger.Vacation.update_status_on_start()
+    |> RelaxTelegramBot.Trigger.Vacation.update_status_on_end()
+    |> Repo.insert_or_update()
+  end
+
 end

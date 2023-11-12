@@ -11,7 +11,6 @@ defmodule RelaxTelegramBot.MixProject do
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
   def application do
     [
       extra_applications: [:logger, :ecto, :ecto_sql],
@@ -19,7 +18,6 @@ defmodule RelaxTelegramBot.MixProject do
     ]
   end
 
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       {:ecto_sql , "~> 3.10.2"},
