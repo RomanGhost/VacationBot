@@ -43,4 +43,12 @@ defmodule RelaxTelegramBot.Request.Vacation do
     RelaxTelegramBot.Repo.one(query)
   end
 
+  def get_by_date(date) do
+    query =  from v in RelaxTelegramBot.Model.Vacation,
+    where: v.date_begin == ^date or v.date_end == ^date,
+    select: v
+
+    RelaxTelegramBot.Repo.all(query)
+  end
+
 end

@@ -24,7 +24,8 @@ defmodule RelaxTelegramBot.MixProject do
       {:postgrex, "~> 0.17.3"},
       {:telegram, github: "visciang/telegram", tag: "1.1.0"},
       {:finch, "~> 0.16.0"},
-      {:timex, "~> 3.7.11"}
+      {:timex, "~> 3.7.11"},
+      {:quantum, "~> 3.0"}
     ]
   end
 end

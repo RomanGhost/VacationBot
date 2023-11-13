@@ -9,8 +9,6 @@ defmodule RelaxTelegramBot.Bot.VacationReg do
     case (state[:vacation_reg][:step]) do
       0 ->
         {date_begin, date_end} = parce_date(text_message)
-        IO.puts(date_begin)
-        IO.puts(date_end)
         case check_date_begin(date_begin, date_end) do
           {:ok, text, date_begin, date_end} ->
             RelaxTelegramBot.Bot.Handler.send_message(token, chat_id, text)

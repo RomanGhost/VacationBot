@@ -83,7 +83,6 @@ defmodule RelaxTelegramBot.Bot.Commands do
 
   defp command(%{"message" => %{"text" => "/view_vacations", "chat" => %{"id" => chat_id}}}, token, state) do
     vacations = RelaxTelegramBot.Request.VacationViewer.get_all_vacations()
-    IO.inspect(vacations)
     text = if Enum.empty?(vacations) do
       "Отпусков пока нет"
     else

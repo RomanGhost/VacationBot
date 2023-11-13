@@ -10,8 +10,9 @@ config :relax_telegram_bot, RelaxTelegramBot.Repo,
   pool_size: 10
 
 config :relax_telegram_bot, RelaxTelegramBot.Scheduler,
-  hour: 5,
-  minute: 30
+  jobs: [
+    {"@daily", fn -> RelaxTelegramBot.Service.handle_task() end}
+  ]
 
 config :relax_telegram_bot, ecto_repos: [RelaxTelegramBot.Repo]
 config :tesla, :adapter, {Tesla.Adapter.Finch, name: RelaxTelegramBot.Finch}
