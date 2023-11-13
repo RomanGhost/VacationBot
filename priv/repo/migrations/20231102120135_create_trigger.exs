@@ -5,7 +5,7 @@ defmodule RelaxTelegramBot.Repo.Migrations.AddVacationStatusTriggers do
     execute("""
       CREATE OR REPLACE FUNCTION notify_vacation() RETURNS TRIGGER AS $$
       BEGIN
-        IF CURRENT_DATE = NEW.date_begin THEN
+        IF (CURRENT_DATE = NEW.date_begin OR CURRENT_DATE = NEW.date_end) AND TG_OP = 'INSERT' THEN
           PERFORM pg_notify('vacation_date', NEW.id::text);
         END IF;
         RETURN NEW;

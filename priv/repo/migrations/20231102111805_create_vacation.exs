@@ -11,6 +11,8 @@ defmodule RelaxTelegramBot.Repo.Migrations.CreateVacation do
       add :date_end, :date
       add :justification, :string
 
+      timestamps()
+
     end
 
     create index(:vacation, [:user_id])

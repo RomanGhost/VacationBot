@@ -7,5 +7,7 @@ defmodule RelaxTelegramBot.Model.Vacation do
     field :date_begin, :date
     field :date_end, :date
     field :justification, :string
+
+    timestamps()
   end
 end
