@@ -1,21 +1,105 @@
-# RelaxTelegramBot
+# Проект RelaxTelegramBot
 
-**TODO: Add description**
+## Описание проекта
+Проект телеграм бота для отслеживания отпусков внутри отдела сотрудников.
+Написан на `Elixir` с использованием библиотеки https://github.com/visciang/telegram.
 
-## Installation
+## Внутренние переменные
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `relax_telegram_bot` to your list of dependencies in `mix.exs`:
+- `database`: `System.get_env("DATABASE_NAME")`
+- `username`: `System.get_env("DATABASE_USERNAME")`
+- `password`: `System.get_env("DATABASE_PASSWORD")`
+- `hostname`: `System.get_env("DATABASE_HOSTNAME")`
+- `token`: `System.get_env("BOT_TOKEN")`
+- `max_bot_concurrency`: `System.get_env("BOT_MAX_CONCURRENTCY", "1000") |> String.to_integer()`
 
-```elixir
-def deps do
-  [
-    {:relax_telegram_bot, "~> 0.1.0"}
-  ]
-end
-```
+## Команды
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/relax_telegram_bot>.
+### `/start`
+- **Описание:** Начало работы с ботом.
+- **Действие:** Отправляет приветственное сообщение и предлагает пройти регистрацию или создать отпуск.
+
+### `/reset`
+- **Описание:** Сброс состояния пользователя.
+- **Действие:** Сбрасывает текущее состояние пользователя.
+
+### `/info`
+- **Описание:** Получение списка команд.
+- **Действие:** Отправляет список команд с их описанием.
+
+
+### `/reg`
+- **Описание:** Регистрация пользователя.
+- **Действие:** Начинает процесс регистрации, запрашивая имя пользователя.
+
+### `/vacation`
+- **Описание:** Создание отпуска.
+- **Действие:** Запускает процесс заполнения информации о планируемом отпуске.
+
+### `/view_vacations`
+- **Описание:** Просмотр всех отпусков.
+- **Действие:** Отправляет список всех отпусков сотрудников.
+
+### `/view_employee`
+- **Описание:** Просмотр списка сотрудников.
+- **Действие:** Отправляет список всех зарегистрированных сотрудников.
+
+### `/cancel`
+- **Описание**: Отмена отпуска (для пользователя).
+- **Действие**: Отменяет планируемый отпуск.
+
+### `/approve n`
+- **Описание:** Одобрение отпуска (для администратора), через пробел указывается число - номер отпуска.
+- **Действие:** Одобряет планируемый отпуск.
+
+### `/refuse n`
+- **Описание:** Отклонение отпуска (для администратора), через пробел указывается число - номер отпуска.
+- **Действие:** Отклоняет планируемый отпуск.
+
+### `/dismissal n`
+- **Описание:** Увольнение сотрудника (для администратора), через пробел указывается число - номер сотрудника.
+- **Действие:** Удаляет сотрудника из списка.
+
+### `/dismissal`
+- **Описание:** Увольнение себя (для пользователя).
+- **Действие:** Удаляет пользователя из списка.
+
+## Сборка проекта
+
+Для сборки проекта на Elixir выполните следующие команды:
+(Перед началом проекта у вас должен быть настроен **postgres**)
+1. Установите зависимости:
+   ```elixir
+   mix deps.get
+   ```
+
+2. Создайте базу данных:
+   ```elixir
+    DATABASE_HOSTNAME="<database adress>" \
+    DATABASE_NAME="<tablename>" \
+    DATABASE_USERNAME="<username>" \
+    DATABASE_PASSWORD="<password>" \
+    mix ecto.create
+   ```
+
+3. Выполните миграции:
+   ```elixir
+    DATABASE_HOSTNAME="<database adress>" \
+    DATABASE_NAME="<tablename>" \
+    DATABASE_USERNAME="<username>" \
+    DATABASE_PASSWORD="<password>" \
+    mix ecto.migrate
+   ```
+
+4. Запустите приложение:
+   ```elixir
+    DATABASE_HOSTNAME="<database adress>" \
+    DATABASE_NAME="<tablename>" \
+    DATABASE_USERNAME="<username>" \
+    DATABASE_PASSWORD="<password>" \
+    BOT_TOKEN="<Telgram token>" \
+    mix run --no-halt
+   ```
+
+Теперь ваш проект должен быть успешно собран и запущен.
 
