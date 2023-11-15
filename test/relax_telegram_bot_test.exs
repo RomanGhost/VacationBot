@@ -1,8 +1,8 @@
 defmodule RelaxTelegramBotTest do
   use ExUnit.Case
-  doctest RelaxTelegramBot
 
-  test "greets the world" do
-    assert RelaxTelegramBot.hello() == :world
+  setup do
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
   end
+
 end
